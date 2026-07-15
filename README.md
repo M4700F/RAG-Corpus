@@ -18,7 +18,7 @@ Test it's alive: `curl http://localhost:11434/api/tags` should list your pulled 
 `pip install requests`
 
 # Test on a few samples first
-python generate_qa.py --input "dataset samples.json" --output questions.md --model qwen2.5:14b --limit 5
+`python generate_qa.py --input "dataset samples.json" --output questions.md --model qwen2.5:14b --limit 5`
 
 # Once happy, run on the full file
-python generate_qa.py --input "dataset samples.json" --output questions.md --model qwen2.5:14b
+`python generate_qa.py --input "dataset samples.json" --output questions.md --model qwen2.5:14b`
