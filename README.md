@@ -3,7 +3,9 @@
 
 # Pull a Bengali-capable model (pick one)
 `ollama pull qwen2.5:14b      # better quality, needs more RAM/VRAM`
+
 `ollama pull qwen2.5:7b       # lighter, still decent on Bengali`
+
 `ollama pull gemma2:9b        # alternative option`
 
 # Start the server (usually auto-starts, but just in case)
