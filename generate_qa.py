@@ -3,7 +3,7 @@ Generate 8 WH questions + answers per context entry from a Bengali
 hallucination-detection dataset, using a local Ollama model.
 
 Usage:
-    python generate_qa.py --input samples.json --output questions.md --model qwen2.5:14b
+    python generate_qa.py --input "dataset samples.json" --output question_answer.json --model qwen2.5:14b
 
 Requires:
     pip install requests
@@ -101,63 +101,36 @@ def process_dataset(input_path, output_path, model, limit=None):
     if limit:
         samples = samples[:limit]
 
-    md_lines = ["# Generated WH Questions from Contexts\n"]
-    skipped = 0
-    total_generated = 0
-    total_flagged = 0
+    all_pairs = []
 
     for idx, sample in enumerate(samples):
         context = sample.get("context")
         if context in NULL_MARKERS:
-            skipped += 1
             continue
 
         print(f"[{idx+1}/{len(samples)}] Generating questions...")
         qa_pairs = call_ollama(model, context)
 
-        md_lines.append(f"## Sample {idx+1}\n")
-        md_lines.append(f"**Context:**\n\n> {context}\n")
-
         if not qa_pairs:
-            md_lines.append("\n_⚠️ Generation failed for this sample._\n")
             print("  -> FAILED to generate/parse")
             continue
 
-        md_lines.append("\n| # | Question | Answer | Grounded? |")
-        md_lines.append("|---|----------|--------|-----------|")
-
-        for i, qa in enumerate(qa_pairs[:8], 1):
+        for qa in qa_pairs[:8]:
             q = qa.get("question", "").strip()
             a = qa.get("answer", "").strip()
-            grounded = is_grounded(a, context)
-            total_generated += 1
-            if not grounded:
-                total_flagged += 1
-            flag = "✅" if grounded else "❌ NOT FOUND IN CONTEXT"
-            md_lines.append(f"| {i} | {q} | {a} | {flag} |")
-
-        md_lines.append("\n---\n")
-
-    md_lines.append(
-        f"\n## Summary\n\n"
-        f"- Samples processed: {len(samples) - skipped}\n"
-        f"- Samples skipped (null context): {skipped}\n"
-        f"- Total Q&A pairs generated: {total_generated}\n"
-        f"- Flagged as NOT grounded (needs manual review): {total_flagged}\n"
-    )
+            all_pairs.append({"Question": q, "Answer": a})
 
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(md_lines))
+        json.dump(all_pairs, f, ensure_ascii=False, indent=2)
 
     print(f"\nDone. Wrote {output_path}")
-    print(f"Skipped {skipped} null-context samples.")
-    print(f"Flagged {total_flagged}/{total_generated} answers as ungrounded — review these manually.")
+    print(f"Total Q&A pairs generated: {len(all_pairs)}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True, help="Path to samples.json")
-    parser.add_argument("--output", default="questions.md", help="Output markdown file")
+    parser.add_argument("--input", required=True, help='Path to dataset samples.json')
+    parser.add_argument("--output", default="question_answer.json", help="Output JSON file")
     parser.add_argument("--model", default="qwen2.5:14b", help="Ollama model name")
     parser.add_argument("--limit", type=int, default=None, help="Only process first N samples (for testing)")
     args = parser.parse_args()
